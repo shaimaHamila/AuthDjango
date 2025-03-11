@@ -9,22 +9,20 @@ import {
   Row,
   Col,
   message,
+  Spin,
 } from "antd";
 import api from "../../api/apiConfig";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+
+import Note from "../../components/Note/Note";
+import { NoteType } from "../../types/NoteType";
 const { Header, Content } = Layout;
 
-interface Note {
-  id: number;
-  title: string;
-  content: string;
-}
-
 const Home: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [notes, setNotes] = useState<NoteType[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentNote, setCurrentNote] = useState<Note | null>(null); // Track current note for editing
+  const [currentNote, setCurrentNote] = useState<NoteType | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -36,7 +34,7 @@ const Home: React.FC = () => {
     api
       .get("/notes/")
       .then((res) => setNotes(res.data))
-      .catch((err) => message.error("Failed to load notes"))
+      .catch(() => message.error("Failed to load notes"))
       .finally(() => setLoading(false));
   };
 
@@ -56,7 +54,7 @@ const Home: React.FC = () => {
 
   const handleModalCancel = () => {
     setIsModalOpen(false);
-    setCurrentNote(null); // Reset current note on cancel
+    setCurrentNote(null);
   };
 
   const createOrUpdateNote = (values: { title: string; content: string }) => {
@@ -69,6 +67,7 @@ const Home: React.FC = () => {
             message.success("Note updated!");
             setIsModalOpen(false);
             form.resetFields();
+            setCurrentNote(null);
             getNotes();
           } else {
             message.error("Failed to update note.");
@@ -84,6 +83,7 @@ const Home: React.FC = () => {
             message.success("Note Created!");
             setIsModalOpen(false);
             form.resetFields();
+            form.resetFields();
             getNotes();
           } else {
             message.error("Failed to create note.");
@@ -93,13 +93,7 @@ const Home: React.FC = () => {
     }
   };
 
-  // Opening the modal for editing or creating a note
-  const handleCreateNote = () => {
-    setCurrentNote(null); // Reset currentNote for creating a new note
-    setIsModalOpen(true);
-  };
-
-  const handleEditNote = (note: Note) => {
+  const handleEditNote = (note: NoteType) => {
     setCurrentNote(note);
     form.setFieldsValue({ title: note.title, content: note.content });
     setIsModalOpen(true);
@@ -117,50 +111,41 @@ const Home: React.FC = () => {
           padding: "0 20px",
         }}>
         <h2 style={{ color: "#fff" }}>Total Notes: {notes.length}</h2>
-        <Button type="primary" onClick={() => setIsModalOpen(true)}>
+        <Button
+          type="primary"
+          onClick={() => {
+            setCurrentNote(null); // Ensure previous note data is cleared
+            form.resetFields();
+            setIsModalOpen(true);
+          }}>
           Create Note
         </Button>
       </Header>
 
       <Content style={{ padding: 24 }}>
-        <Row gutter={[16, 16]}>
-          {notes.map((note) => (
-            <Col key={note.id} xs={24} sm={12} md={8} lg={6}>
-              <Card
-                key={note.id}
-                title={note.title}
-                actions={[
-                  <EditOutlined
-                    key="edit"
-                    onClick={() => handleEditNote(note)} // Open edit modal
-                    style={{
-                      fontSize: "18px",
-                      cursor: "pointer",
-                      color: "blue",
-                    }}
-                  />,
-                  <DeleteOutlined
-                    key="delete"
-                    onClick={() => deleteNote(note.id)}
-                    style={{
-                      fontSize: "18px",
-                      cursor: "pointer",
-                      color: "red",
-                    }}
-                  />,
-                ]}
-                style={{
-                  margin: 10,
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  justifyContent: "space-between",
-                }}>
-                <p>{note.content}</p>
-              </Card>
-            </Col>
-          ))}
-        </Row>
+        {loading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginTop: 50,
+            }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <Row gutter={[16, 16]}>
+            {notes.map((note, key) => (
+              <Col key={note.id} xs={24} sm={12} md={8} lg={6}>
+                <Note
+                  key={key}
+                  note={note}
+                  handleEditNote={() => handleEditNote(note)}
+                  deleteNote={() => deleteNote(note.id)}
+                />
+              </Col>
+            ))}
+          </Row>
+        )}
       </Content>
 
       {/* Modal for Creating or Editing Notes */}
@@ -168,6 +153,7 @@ const Home: React.FC = () => {
         title={currentNote ? "Edit Note" : "Create Note"}
         open={isModalOpen}
         onCancel={handleModalCancel}
+        maskClosable={true}
         footer={null}>
         <Form form={form} layout="vertical" onFinish={createOrUpdateNote}>
           <Form.Item
