@@ -13,19 +13,16 @@ import {
 } from "antd";
 import api from "../../api/apiConfig";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+
+import Note from "../../components/Note/Note";
+import { NoteType } from "../../types/NoteType";
 const { Header, Content } = Layout;
 
-interface Note {
-  id: number;
-  title: string;
-  content: string;
-}
-
 const Home: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [notes, setNotes] = useState<NoteType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentNote, setCurrentNote] = useState<Note | null>(null);
+  const [currentNote, setCurrentNote] = useState<NoteType | null>(null);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -96,7 +93,7 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleEditNote = (note: Note) => {
+  const handleEditNote = (note: NoteType) => {
     setCurrentNote(note);
     form.setFieldsValue({ title: note.title, content: note.content });
     setIsModalOpen(true);
@@ -137,40 +134,14 @@ const Home: React.FC = () => {
           </div>
         ) : (
           <Row gutter={[16, 16]}>
-            {notes.map((note) => (
+            {notes.map((note, key) => (
               <Col key={note.id} xs={24} sm={12} md={8} lg={6}>
-                <Card
-                  key={note.id}
-                  title={note.title}
-                  actions={[
-                    <EditOutlined
-                      key="edit"
-                      onClick={() => handleEditNote(note)} // Open edit modal
-                      style={{
-                        fontSize: "18px",
-                        cursor: "pointer",
-                        color: "blue",
-                      }}
-                    />,
-                    <DeleteOutlined
-                      key="delete"
-                      onClick={() => deleteNote(note.id)}
-                      style={{
-                        fontSize: "18px",
-                        cursor: "pointer",
-                        color: "red",
-                      }}
-                    />,
-                  ]}
-                  style={{
-                    margin: 10,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    justifyContent: "space-between",
-                  }}>
-                  <p>{note.content}</p>
-                </Card>
+                <Note
+                  key={key}
+                  note={note}
+                  handleEditNote={() => handleEditNote(note)}
+                  deleteNote={() => deleteNote(note.id)}
+                />
               </Col>
             ))}
           </Row>
